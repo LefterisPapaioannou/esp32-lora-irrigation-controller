@@ -1,0 +1,253 @@
+esphome:
+  name: remote-node
+  friendly_name: remote-node
+
+esp32:
+  variant: esp32c6
+  flash_size: 4MB
+  framework:
+    type: esp-idf
+
+logger:
+
+api:
+  encryption:
+    key: "API_Key"
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: "SSID"
+  password: "Password"
+  reboot_timeout: 0s
+  ap:
+    ssid: "Fallback_Hotspot_SSID"
+    password: "Fallback_Hotspot_Password"
+
+captive_portal:
+
+globals:
+  - id: current_bitmask
+    type: uint32_t
+    restore_value: no
+    initial_value: "0"
+
+# ------------------------------------------------------------------------------
+# I2C  (CH423)
+# ------------------------------------------------------------------------------
+i2c:
+  sda: GPIO7
+  scl: GPIO0
+  scan: true
+
+# ------------------------------------------------------------------------------
+# CH423 I/O expander
+# ------------------------------------------------------------------------------
+ch423:
+  - id: relay_hub
+
+# ------------------------------------------------------------------------------
+# SPI
+# ------------------------------------------------------------------------------
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO20
+  miso_pin: GPIO19
+
+# ------------------------------------------------------------------------------
+# LoRa radio
+# ------------------------------------------------------------------------------
+sx127x:
+  id: lora_radio
+  setup_priority: 800
+  cs_pin: GPIO21
+  dio0_pin: GPIO22
+  rst_pin: GPIO15
+  frequency: 868.0MHz
+  modulation: LORA
+  sync_value: 0x4A
+  preamble_size: 8
+  bandwidth: 125_0kHz
+  spreading_factor: 7
+  crc_enable: true
+  pa_pin: BOOST
+  pa_power: 17
+  rx_start: true
+
+  # ---------- Command packet received from gateway ----------------------------
+  on_packet:
+    then:
+      - lambda: |-
+          if (x.size() != 5 || x[0] != 0x55 || x[1] != 0xAA) return;
+
+          static switch_::Switch *relays[24] = {
+              id(r1_sw),  id(r2_sw),  id(r3_sw),  id(r4_sw),  id(r5_sw),  id(r6_sw),
+              id(r7_sw),  id(r8_sw),  id(r9_sw),  id(r10_sw), id(r11_sw), id(r12_sw),
+              id(r13_sw), id(r14_sw), id(r15_sw), id(r16_sw), id(r17_sw), id(r18_sw),
+              id(r19_sw), id(r20_sw), id(r21_sw), id(r22_sw), id(r23_sw), id(r24_sw),
+          };
+
+          uint32_t mask = (uint32_t)x[2] | ((uint32_t)x[3] << 8) | ((uint32_t)x[4] << 16);
+          id(current_bitmask) = mask;
+          ESP_LOGI("remote", "RX command bitmask=0x%06X", mask);
+
+          for (uint8_t i = 0; i < 24; i++) {
+            if ((mask >> i) & 1) relays[i]->turn_on(); else relays[i]->turn_off();
+          }
+      - sx127x.send_packet:
+          id: lora_radio
+          data: !lambda |-
+            uint32_t m = id(current_bitmask);
+            return { 0x55, 0xAA, (uint8_t)(m & 0xFF), (uint8_t)((m >> 8) & 0xFF), (uint8_t)((m >> 16) & 0xFF) };
+
+# ------------------------------------------------------------------------------
+# CH423 RELAY SWITCHES
+# pin 0–7   → IO0–IO7  (bidirectional IO group) — original board
+# pin 8–23  → OC0–OC15 (output-only OC group)   — 2 new boards
+# inverted: true → LOW when ON (active-low relay board)
+# ------------------------------------------------------------------------------
+switch:
+  - platform: gpio
+    id: r1_sw
+    name: "Remote Relay 1"
+    pin: &relay_pin { ch423: relay_hub, number: 0, mode: OUTPUT, inverted: true }
+    restore_mode: &relay_restore ALWAYS_OFF
+
+  - platform: gpio
+    id: r2_sw
+    name: "Remote Relay 2"
+    pin: { <<: *relay_pin, number: 1 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r3_sw
+    name: "Remote Relay 3"
+    pin: { <<: *relay_pin, number: 2 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r4_sw
+    name: "Remote Relay 4"
+    pin: { <<: *relay_pin, number: 3 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r5_sw
+    name: "Remote Relay 5"
+    pin: { <<: *relay_pin, number: 4 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r6_sw
+    name: "Remote Relay 6"
+    pin: { <<: *relay_pin, number: 5 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r7_sw
+    name: "Remote Relay 7"
+    pin: { <<: *relay_pin, number: 6 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r8_sw
+    name: "Remote Relay 8"
+    pin: { <<: *relay_pin, number: 7 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r9_sw
+    name: "Remote Relay 9"
+    pin: { <<: *relay_pin, number: 8 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r10_sw
+    name: "Remote Relay 10"
+    pin: { <<: *relay_pin, number: 9 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r11_sw
+    name: "Remote Relay 11"
+    pin: { <<: *relay_pin, number: 10 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r12_sw
+    name: "Remote Relay 12"
+    pin: { <<: *relay_pin, number: 11 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r13_sw
+    name: "Remote Relay 13"
+    pin: { <<: *relay_pin, number: 12 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r14_sw
+    name: "Remote Relay 14"
+    pin: { <<: *relay_pin, number: 13 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r15_sw
+    name: "Remote Relay 15"
+    pin: { <<: *relay_pin, number: 14 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r16_sw
+    name: "Remote Relay 16"
+    pin: { <<: *relay_pin, number: 15 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r17_sw
+    name: "Remote Relay 17"
+    pin: { <<: *relay_pin, number: 16 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r18_sw
+    name: "Remote Relay 18"
+    pin: { <<: *relay_pin, number: 17 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r19_sw
+    name: "Remote Relay 19"
+    pin: { <<: *relay_pin, number: 18 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r20_sw
+    name: "Remote Relay 20"
+    pin: { <<: *relay_pin, number: 19 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r21_sw
+    name: "Remote Relay 21"
+    pin: { <<: *relay_pin, number: 20 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r22_sw
+    name: "Remote Relay 22"
+    pin: { <<: *relay_pin, number: 21 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r23_sw
+    name: "Remote Relay 23"
+    pin: { <<: *relay_pin, number: 22 }
+    restore_mode: *relay_restore
+
+  - platform: gpio
+    id: r24_sw
+    name: "Remote Relay 24"
+    pin: { <<: *relay_pin, number: 23 }
+    restore_mode: *relay_restore
