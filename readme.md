@@ -74,7 +74,9 @@ Both nodes utilize an ESP32-C6 and an SX127x LoRa Radio. The Remote Node adds a 
 
 ## Installation & Setup
 
-1. Clone this repository: git clone https://github.com/LefterisPapaioannou/esp32-lora-irrigation-controller.git
-2. Fill in your Wi-Fi credentials and ESPHome API key.
-3. Compile and flash gateway-node.yaml to the indoor Gateway ESP32-C6.
-4. Compile and flash remote-node.yaml to the field Remote ESP32-C6.
+1. Clone this repository: git clone https://github.com/your-username/your-repo-name.git
+2. Duplicate secrets.example.yaml and rename it to secrets.yaml.
+3. Fill in your Wi-Fi credentials and ESPHome API keys in secrets.yaml (this file is ignored by Git).
+4. Compile and flash gateway-node.yaml to the indoor Gateway ESP32-C6.
+5. Compile and flash remote-node.yaml to the field Remote ESP32-C6.
+
