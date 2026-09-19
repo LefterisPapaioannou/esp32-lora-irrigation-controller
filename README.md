@@ -31,7 +31,7 @@ Because the Gateway Node is built with ESPHome, it will automatically be discove
 **Relay & Power Control (Remote Node)**
 * 1x CH423 I/O Expander
 * 3x 8-Channel 5V Relay Boards (Active-Low)
-* 1x LM2596HV Step-Down Converter (Converts 24V AC down to 5V DC for the relay boards)
+* 1x AC/DC-DC LM2596HV Step-Down Converter (Converts 24V AC down to 5V DC for the relay boards)
 
 ## Recommended Alternative Hardware (Beginner Friendly)
 
